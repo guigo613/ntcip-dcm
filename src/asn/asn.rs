@@ -335,8 +335,8 @@ impl StructASN for Integer {
 		let mut bytes = Vec::new();
 		let b = self.content.to_be_bytes();
 		
-		let mut offset = (7 - self.content / 0x100) as usize;
-		for o in offset..b.len() {
+		let mut offset = 0;
+		for o in 0..b.len() {
 			if b[o] != 0 {
 				break;
 			} else {
@@ -346,7 +346,7 @@ impl StructASN for Integer {
 
 		offset = match offset {
 			0..=3 => 0,
-			5 => 4,
+			5 | 8 => offset - 1,
 			4 | 6..=7 => offset,
 			_ => unreachable!()
 		};
