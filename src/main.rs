@@ -116,7 +116,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 			edit.write(format!("{:#?}\r\n\r\n", d).as_bytes())?;
 		}
 		
-		let mut back: Sequence = dcm.into();
+		let back: Sequence = dcm.into();
 
 		new.write(&back.encode())?;
 

@@ -20,6 +20,7 @@ pub trait StructASN {
 }
 
 #[repr(u8)]
+#[derive(Debug)]
 pub enum Type {
 	Sequence = 0x10,
 	Integer = 0x02,
@@ -32,8 +33,14 @@ pub enum Type {
 
 impl From<u8> for Type {
 	fn from(id: u8) -> Self {
-		unsafe {
-			mem::transmute(id)
+		match id {
+			0x10 => Type::Sequence,
+			0x02 => Type::Integer,
+			0x06 => Type::OID,
+			0x04 => Type::OctetString,
+			0x41 => Type::Application,
+			0x17 => Type::UTCTime,
+			_ => Type::Unknown
 		}
 	}
 }

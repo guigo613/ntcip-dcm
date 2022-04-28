@@ -1,6 +1,7 @@
 mod asn;
 mod oid;
 mod dcm;
+pub mod bin;
 
 pub use asn::*;
 pub use oid::{
