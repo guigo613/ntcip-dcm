@@ -426,6 +426,10 @@ pub struct DCM {
 }
 
 impl DCM {
+    pub fn set_version(&mut self, value: isize) {
+        self.version.set(ASN::Integer(Integer::new(value)));
+    }
+
     pub fn set_site_id(&mut self, site_id: &str) {
         let id = if site_id.len() > 40 {
             site_id[0..40].as_bytes()

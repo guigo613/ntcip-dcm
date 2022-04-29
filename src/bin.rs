@@ -13,6 +13,7 @@ pub fn init(file: &[u8], id: &str, desc: &str) -> Result<Vec<u8>, Box<dyn Error>
 		let sequence: Sequence = asn.try_into()?;
 		let mut dcm: DCM = sequence.try_into()?;
 
+		dcm.set_version(123);
 		dcm.set_site_id(id);
 		dcm.set_site_description(desc);
 
