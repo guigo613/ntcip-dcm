@@ -50,17 +50,17 @@ fn alter_value<R: SampleRange<u16> + Clone>(length: Option<usize>, num_axles: Op
 	let mut rng = rand::thread_rng();
 
 	for device in devices {
-		let len_r = rng.gen_range(len_range.clone()) as isize * 5;
+		let len_r = rng.gen_range(len_range.clone()) * 5;
 		let w1 = rng.gen_range(w1_range.clone()) * 10;
 		let w2 = rng.gen_range(w2_range.clone()) * 10;
 		let len = if let Some(n) = length {
-			if let Some(l) = *device[n - 1].get_values().get(0) {
-				l
+			if let Some(l) = device[n - 1].get_values().get(0) {
+				*l as u16
 			} else {
 				device[n - 1] = VehCriteria::VehicleLength(len_r).absolute();
 				len_r
 			}
-		} else { len_r } as u16;
+		} else { len_r };
 
 		if let Some(n) = num_axles {
 			device[n - 1] = VehCriteria::AxleNumber(2).absolute();
@@ -72,7 +72,7 @@ fn alter_value<R: SampleRange<u16> + Clone>(length: Option<usize>, num_axles: Op
 			device[n - 1] = VehCriteria::AxleWeight(vec![w1, w2]).absolute();
 		}
 		if let Some(n) = gross_weight {
-			device[n - 1] = VehCriteria::GrossVehicleWeight(w1 + w2).absolute();
+			device[n - 1] = VehCriteria::GrossVehicleWeight(w1 as u32 + w2 as u32).absolute();
 		}
 	}
 }
