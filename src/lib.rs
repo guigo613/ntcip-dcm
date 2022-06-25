@@ -12,7 +12,8 @@ pub use dcm::*;
 
 use std::{
     mem::ManuallyDrop,
-    ffi::CString
+    ffi::CString,
+    mem
 };
 
 
@@ -202,6 +203,88 @@ pub unsafe extern fn get_oid_type(o: *mut i32, size: i32) -> OIDInfo {
     let oid: Vec<isize> = o.iter().map(|x| *x as isize).collect();
 
     OIDInfo::new(oid)
+}
+
+#[no_mangle]
+pub unsafe extern fn create_dcm() -> *mut DCM {
+    Box::into_raw(Box::new(DCM::new()))
+}
+
+#[no_mangle]
+pub unsafe extern fn set_header(dcm: *mut DCM, c: *mut u8, size: i32) {
+    let mut asn = AsnReader::new();
+    let content = Vec::from_raw_parts(c, size as usize, size as usize);
+    let seq = asn.read_ber(&*content).expect("Header invalido!");
+    (*dcm).header = DCMHeader::new(seq.try_into().expect("Deve começar com uma Sequencia"));
+    mem::forget(content);
+}
+
+#[no_mangle]
+pub unsafe extern fn time_header(dcm: *mut DCM, idx: u32, start_time: u32, end_time: u32) {
+    if let Some(v) = (*dcm).header.config.get_mut(idx as usize) {
+        if let StudyConfig::StudyConfigTable(v2) = v {
+            v2.start_date_time = Application::new(start_time.to_be_bytes().to_vec());
+            v2.end_date_time = Application::new(end_time.to_be_bytes().to_vec());
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern fn set_body(
+        dcm: *mut DCM,
+        ds_study_num: i32,
+        data_struc_index: i32,
+        start_time: u32,
+        end_time: u32,
+        c: *mut u8,
+        size: i32
+    ) {
+    let mut s = DataStructureEntry::default();
+    let content = Vec::from_raw_parts(c, size as usize, size as usize);
+    s.ds_study_num = Integer::new(ds_study_num as isize);
+    s.data_struc_index = Integer::new(data_struc_index as isize);
+    s.start_time = Application::new(start_time.to_be_bytes().to_vec());
+    s.end_time = Application::new(end_time.to_be_bytes().to_vec());
+    s.data_encoding = Integer::new(2);
+    s.data = OctetString::new(content.clone());
+    let data = (*dcm).header.translate_data(s);
+    (*dcm).body.set(data);
+    mem::forget(content);
+}
+
+#[no_mangle]
+pub unsafe extern fn get_bytes(dcm: *mut DCM) -> Bytes {
+    let seq: Sequence = (*dcm).clone().into();
+    let v = seq.encode();
+
+    let bytes = v.into();
+
+    bytes
+}
+
+#[repr(C)]
+pub struct Bytes {
+    pointer: *const u8,
+    size: i32
+}
+
+impl Bytes {
+    fn new(v: Vec<u8>) -> Self {
+        let pointer = v.as_ptr();
+        let size = v.len() as i32;
+        mem::forget(v);
+        
+        Self {
+            pointer,
+            size
+        }
+    }
+}
+
+impl From<Vec<u8>> for Bytes {
+    fn from(v: Vec<u8>) -> Self {
+        Self::new(v)
+    }
 }
 
 #[cfg(test)]

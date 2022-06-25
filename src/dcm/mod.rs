@@ -39,7 +39,7 @@ use std::{
     }
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DCMConfig {
     study_config_table: Vec<StudyConfig>
 }
@@ -72,7 +72,7 @@ impl Default for DCMConfig {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DCMHeader {
     pub site_id: SiteId,
     pub site_description: SiteDescription,
@@ -82,7 +82,7 @@ pub struct DCMHeader {
 }
 
 impl DCMHeader {
-    fn new(mut header: Sequence) -> Self {
+    pub fn new(mut header: Sequence) -> Self {
         let head = header.remove(0);
         let mut dcm = Self::default();
         if let ASN::Sequence(seq) = head {
@@ -102,6 +102,23 @@ impl DCMHeader {
         self.content.values().find_map(|x| if x.param() == oid { Some(x.index() as usize) } else { None })
     }
 
+    pub fn translate_data(&self, mut data: DataStructureEntry) -> DCMDataStructEntry {
+        let mut study = Vec::new();
+        let devices = self.content.iter().fold(HashMap::new(), |mut x, (&k ,v)| { x.insert(k, v.param().try_into_oid().unwrap()); x });
+        let len = devices.values().fold(0, |x, y| x + if ["AxleSpacing", "AxleWeight"].contains(&y.get_name()) { 1 } else { y.len_value() });
+        while data.len() >= len as usize {
+            let mut vehicle = Vec::new();
+            for idx in 1..=devices.len() {
+                let mut oid = devices.get(&(idx as isize)).unwrap().clone();
+                oid.get_value(&mut data);
+                vehicle.push(oid);
+            }
+            study.push(vehicle);
+        }
+        data.data_num_records = Integer::new(study.len() as isize);
+        DCMDataStructEntry::new(data, study)
+    }
+
     fn read_body(&self, body: ASN) -> DCMBody {
         let seq: Sequence = body.try_into().unwrap();
         let mut s = seq.into_iter();
@@ -117,19 +134,8 @@ impl DCMHeader {
                             entry.set(v);
                         }
                         
-                        for e in entry.iter() {
-                            let mut cloned = e.clone();
-                            let mut study = Vec::new();
-                            while cloned.len() > self.content.len() {
-                                let mut vehicle = Vec::new();
-                                for idx in 1..=self.content.len() {
-                                    let mut oid = self.content.get(&(idx as isize)).unwrap().param().try_into_oid().unwrap();
-                                    oid.get_value(&mut cloned);
-                                    vehicle.push(oid);
-                                }
-                                study.push(vehicle);
-                            }
-                            let data = DCMDataStructEntry::new(e, study);
+                        for e in entry.to_vec().into_iter() {
+                            let data = self.translate_data(e);
                             dcm.set(data);
                         }
                     },
@@ -258,13 +264,13 @@ impl Into<Sequence> for DCMHeader {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DCMBody {
     pub data_struct: Vec<DCMDataStructEntry>,
 }
 
 impl DCMBody {
-    fn set(&mut self, v: DCMDataStructEntry) {
+    pub fn set(&mut self, v: DCMDataStructEntry) {
         self.data_struct.push(v);
     }
 
@@ -329,7 +335,7 @@ impl Into<Sequence> for Vec<DCMDataStructEntry> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct DCMDataStructEntry {
     pub ds_study_num: Integer,
     pub data_struc_index: Integer,
@@ -341,12 +347,12 @@ pub struct DCMDataStructEntry {
 }
 
 impl DCMDataStructEntry {
-    fn new(entry: &DataStructureEntry, data: Vec<Vec<Device>>) -> Self {
+    pub fn new(entry: DataStructureEntry, data: Vec<Vec<Device>>) -> Self {
         Self {
             ds_study_num: entry.ds_study_num,
             data_struc_index: entry.data_struc_index,
-            start_time: entry.start_time.clone(),
-            end_time: entry.end_time.clone(),
+            start_time: entry.start_time,
+            end_time: entry.end_time,
             data_num_records: entry.data_num_records,
             data_encoding: entry.data_encoding,
             data,
@@ -418,14 +424,22 @@ impl Into<Sequence> for DCMDataStructEntry {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DCM {
     version: MibVersionNumber,
     pub header: DCMHeader,
-    body: DCMBody,
+    pub body: DCMBody,
 }
 
 impl DCM {
+    pub fn new() -> Self {
+        Self {
+            version: MibVersionNumber::new(ASN::Integer(Integer::new(123))),
+            header: DCMHeader::default(),
+            body: DCMBody::default()
+        }
+    }
+
     pub fn set_version(&mut self, value: isize) {
         self.version.set(ASN::Integer(Integer::new(value)));
     }
@@ -442,6 +456,10 @@ impl DCM {
 
     pub fn set_site_description(&mut self, site_description: &str) {
         self.header.site_description.set(ASN::OctetString(OctetString::new(site_description.as_bytes().to_owned())));
+    }
+
+    pub fn as_mut(&mut self) -> *mut Self {
+        self as *mut _
     }
 }
 

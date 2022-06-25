@@ -12,3 +12,5 @@ use chrono;
 
 pub use asn::*;
 pub use decode::*;
+
+const BYTES: usize = usize::BITS as usize / 8;

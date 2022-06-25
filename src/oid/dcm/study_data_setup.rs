@@ -92,10 +92,10 @@ impl OID for StudyDataSetup {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PvrStudyConfigEntry {
-    psc_study_num: Integer,
-    pvr_study_index: Integer,
-    pvr_param: AsnOID,
-    pvr_study_config_row_admin: Integer
+    pub psc_study_num: Integer,
+    pub pvr_study_index: Integer,
+    pub pvr_param: AsnOID,
+    pub pvr_study_config_row_admin: Integer
 }
 
 impl PvrStudyConfigEntry {
@@ -152,6 +152,11 @@ impl DataStructureTable {
             }
         }
     }
+
+    pub fn to_vec(self) -> Vec<DataStructureEntry> {
+        let DataStructureTable(vec) = self;
+        vec
+    }
 }
 
 impl Deref for DataStructureTable {
@@ -182,7 +187,7 @@ pub struct DataStructureEntry {
     pub end_time: Application,
     pub data_num_records: Integer,
     pub data_encoding: Integer,
-    data: OctetString
+    pub data: OctetString
 }
 
 impl DataStructureEntry {

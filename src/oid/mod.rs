@@ -11,6 +11,7 @@ use std::{
 use super::OctetString;
 pub use dcm::{
     DataStructureEntry,
+    StudyConfig,
     Dcm,
     veh_criteria::*
 };

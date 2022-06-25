@@ -1,6 +1,7 @@
 use super::{
     chrono::DateTime,
-    asn::*
+    asn::*,
+	BYTES
 };
 
 pub struct AsnReader {
@@ -39,7 +40,7 @@ impl AsnReader {
 
 		if val >> 7 == 1 {
 			let len = val & 0x7F;
-			let mut b = [0; 8];
+			let mut b = [0; BYTES];
 
 			for i in 1..=len {
 				b[(len - i) as usize] = file[self.reader_idx];
@@ -108,7 +109,7 @@ impl AsnReader {
 	}
 
 	fn get_integer(&mut self, file: &[u8], len: usize) -> Integer {
-		let mut b = [0; 8];
+		let mut b = [0; BYTES];
 
 		for i in 1..=len {
 			b[len - i] = file[self.reader_idx];

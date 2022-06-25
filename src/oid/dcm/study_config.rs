@@ -59,14 +59,14 @@ impl OID for StudyConfig {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct StudyConfigEntry {
-    sc_study_num: Integer,
-    study_type: Integer,
-    start_type: Integer,
-    start_date_time: Application,
-    end_type: Integer,
-    end_date_time: Application,
-    sc_file_study_index: Integer,
-    study_config_row_admin: Integer
+    pub sc_study_num: Integer,
+    pub study_type: Integer,
+    pub start_type: Integer,
+    pub start_date_time: Application,
+    pub end_type: Integer,
+    pub end_date_time: Application,
+    pub sc_file_study_index: Integer,
+    pub study_config_row_admin: Integer
 }
 
 impl StudyConfigEntry {

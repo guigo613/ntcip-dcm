@@ -1,8 +1,8 @@
 use super::{
     io,
     fmt,
-    mem,
 	FromIterator,
+	BYTES,
     ops::{
         Deref,
         DerefMut
@@ -677,17 +677,18 @@ fn insert_length(bytes: &mut Vec<u8>) {
 		}
 
 		offset = match offset {
+			2..=3 if BYTES == 4 => offset,
 			0..=3 => 0,
 			5 => 4,
 			4 | 6..=7 => offset,
 			_ => unreachable!()
 		};
 
-		for i in (offset..8).rev() {
+		for i in (offset..BYTES).rev() {
 			bytes.insert(1, len_bytes[i]);
 		}
 
-		bytes.insert(1, ((8 - offset) | 0x80) as u8);
+		bytes.insert(1, ((BYTES - offset) | 0x80) as u8);
 	}
 	else {
 		bytes.insert(1, length as u8);
